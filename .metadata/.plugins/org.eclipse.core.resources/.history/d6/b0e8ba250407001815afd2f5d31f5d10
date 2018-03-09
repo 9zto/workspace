@@ -1,0 +1,233 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
+package org.usfirst.frc.team3495.robot;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.RemoteFeedbackDevice;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.buttons.JoystickButton;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+/**
+ * The VM is configured to automatically run this class, and to call the
+ * functions corresponding to each mode, as described in the IterativeRobot
+ * documentation. If you change the name of this class or the package after
+ * creating this project, you must also update the build.properties file in the
+ * project.
+ */
+public class Robot extends IterativeRobot {
+	private static final String kDefaultAuto = "Default";
+	private static final String kCustomAuto = "My Auto";
+	private String m_autoSelected;
+	private SendableChooser<String> m_chooser = new SendableChooser<>();
+	TalonSRX t0 = new TalonSRX(0);
+	TalonSRX t1 = new TalonSRX(1);
+	TalonSRX t2 = new TalonSRX(2);
+	TalonSRX t3 = new TalonSRX(3);
+
+	Joystick left = new Joystick(2);
+	Joystick right = new Joystick(0);
+	Joystick controller = new Joystick(1);
+
+	JoystickButton b0 = new JoystickButton (left, 1);
+	JoystickButton b1 = new JoystickButton (controller, 2);
+	JoystickButton b2 = new JoystickButton (controller, 3);
+	JoystickButton b3 = new JoystickButton (controller, 4);
+	JoystickButton climb = new JoystickButton (controller, 5);
+	JoystickButton slowSpeed = new JoystickButton (left, 1);
+
+	JoystickButton normSpeed = new JoystickButton (right, 2);
+	JoystickButton medSpeed = new JoystickButton (left, 2);
+	
+	int Distanceinticks = (t1.getSensorCollection().getQuadraturePosition());
+	int Distanceinrotations = (t1.getSensorCollection().getQuadraturePosition()/4096);
+
+	int Distanceinticks2 = (t3.getSensorCollection().getQuadraturePosition());
+	int Distanceinrotationst3 = (t3.getSensorCollection().getQuadraturePosition()/4096);
+	double Distanceininches = (t1.getSensorCollection().getQuadraturePosition());
+	double Distanceininchest3 = (t3.getSensorCollection().getQuadraturePosition()*18.85/-4096);
+	int leftmotorV = t1.getSensorCollection().getPulseWidthVelocity();
+	int rightmotorV = t3.getSensorCollection().getPulseWidthVelocity();
+
+
+	/**
+	 * This function is run when the robot is first started up and should be
+	 * used for any initialization code.
+	 */
+	@Override
+	public void robotInit() {
+		m_chooser.addDefault("Default Auto", kDefaultAuto);
+		m_chooser.addObject("My Auto", kCustomAuto);
+		SmartDashboard.putData("Auto choices", m_chooser);
+
+
+		t1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
+		t3.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
+		t1.setSelectedSensorPosition(0, 0, 0);
+		t3.setSelectedSensorPosition(0, 0, 0);
+
+
+
+		//put other encoder here
+
+		//t1.setSensorPhase(true);
+		//put others here
+
+
+		//t1.setSelectedSensorPosition(t1.getSensorCollection().getPulseWidthPosition() & 0xFFF, 0, 10);
+		//t1.setSelectedSensorPosition(0, 0, 10);
+		//t3.setSelectedSensorPosition(0, 0, 10);
+		//t1.setSensorPhase(false);
+		//t1.setInverted(false);
+		//t1.setInverted(true);
+
+		//t1.configPeakOutputForward(.4, 10);
+		//	t2.configPeakOutputForward(.4, 10);
+		//	t3.configPeakOutputForward(.4, 10);
+		//	t0.configPeakOutputForward(.4, 10);
+
+		//	t1.configPeakOutputReverse(-.4, 10);
+		//	t2.configPeakOutputReverse(-.4, 10);
+		//	t3.configPeakOutputReverse(-.4, 10);
+		//	t0.configPeakOutputReverse(-.4, 10);
+
+
+	}
+
+
+	/**
+	 * This autonomous (along with the chooser code above) shows how to select
+	 * between different autonomous modes using the dashboard. The sendable
+	 * chooser code works with the Java SmartDashboard. If you prefer the
+	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
+	 * getString line to get the auto name from the text box below the Gyro
+	 *
+	 * <p>You can add additional auto modes by adding additional comparisons to
+	 * the switch structure below with additional strings. If using the
+	 * SendableChooser make sure to add them to the chooser code above as well.
+	 */
+	@Override
+	public void autonomousInit() {
+		
+		m_autoSelected = m_chooser.getSelected();
+		/*autoSelected = SmartDashboard.getString("Auto Selector", 
+		defaultAuto);*/
+		System.out.println("Auto selected: " + m_autoSelected);
+		t1.getSensorCollection().setQuadraturePosition(0, 10);
+		t3.getSensorCollection().setQuadraturePosition(0, 10);
+		t1.getSensorCollection().setPulseWidthPosition(0, 10);
+		t3.getSensorCollection().setPulseWidthPosition(0, 10);
+		t1.set(ControlMode.Position, 0);
+		t3.set(ControlMode.Position, 0);
+		
+		
+		//auton2();
+		
+	}
+
+	/**
+	 * This function is called periodically during autonomous.
+	 */
+	@Override
+	public void autonomousPeriodic() {
+		switch (m_autoSelected) {
+		case kCustomAuto:
+			// Put custom auto code here
+			break;
+		case kDefaultAuto:
+		default:
+			System.out.println(t1.getSensorCollection().getPulseWidthPosition());
+			double Distanceininches = (t1.getSelectedSensorPosition(0)*18.85/-4096);
+			double Distanceininchest3 = (t3.getSelectedSensorPosition(0)*18.85/4096);
+			System.out.println(Distanceininches);
+			System.out.println(Distanceininchest3);
+			//PUT ALL DRIVE CODE IN PERIODIC getSensorCollection().getPulseWidthPosition()
+			auton2();
+			
+			}
+			
+				}
+				
+	
+		
+		
+			
+			// If getPulseWidthPosition() = your whatever distance wanted, do another action by setting the drive to turn to an encoder position
+			
+			
+	
+
+	/**
+	 * This function is called periodically during operator control.
+	 */
+	@Override
+	public void teleopInit() {
+		
+		t1.setSelectedSensorPosition(0, 0, 0);
+		t3.setSelectedSensorPosition(0, 0, 0);
+		t1.set(ControlMode.PercentOutput, 0);
+		t3.set(ControlMode.PercentOutput, 0);
+	}
+	public void teleopPeriodic() {
+		tankDrive(left.getY(), right.getY());
+		System.out.println(t1.getSensorCollection().getQuadraturePosition());
+		//System.out.println(Distanceininchest3);
+	}
+
+	/**
+	 * This function is called periodically during test mode.
+	 */
+	@Override
+	public void testPeriodic() {
+
+	}
+	public void tankDrive(double left, double right){
+		t1.set(ControlMode.PercentOutput, left);
+		t0.set(ControlMode.Follower, 1);
+		t3.set(ControlMode.PercentOutput, -right);
+		t2.set(ControlMode.Follower, 3);
+	}
+
+	/*void auton(){
+		//t1.getSelectedSensorPosition(5);
+		//t3.getSelectedSensorPosition(5);
+		//t1.setSelectedSensorPosition(FeedbackDevice, 5, 5);
+		//t3.setSelectedSensorPosition(FeedbackDevice, 5, 5);\
+		tankDrive(.40, .40);
+		Timer.delay(3);
+		tankDrive(0, 0);
+		Timer.delay(2);
+		tankDrive(.25, .25);
+		Timer.delay(2);
+		tankDrive(0, 0);
+		Timer.delay(10);
+	} 
+	*/
+	
+	void auton2() { 
+		if(t1.getSelectedSensorPosition(0) > -20000) {
+			tankDrive(.25, .25);
+		}else if (t1.getSelectedSensorPosition(0) <= -20000 /*Type.Input*/){
+			tankDrive(.30,0);
+			Timer.delay(1);
+			tankDrive(.25,.25);
+			Timer.delay(2.5);
+			tankDrive(0, 0);
+			Timer.delay(30);
+			
+		}
+	}
+}
+
+

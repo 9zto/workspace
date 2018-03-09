@@ -1,0 +1,613 @@
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) 2017-2018 FIRST. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
+package org.usfirst.frc.team3495.robot;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.BitSet;
+import java.util.TimerTask;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
+import com.ctre.phoenix.motorcontrol.RemoteFeedbackDevice;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.buttons.JoystickButton;
+import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.SPI.Port;
+import edu.wpi.first.wpilibj.command.Subsystem;
+/**
+ * The VM is configured to automatically run this class, and to call the
+ * functions corresponding to each mode, as described in the IterativeRobot
+ * documentation. If you change the name of this class or the package after
+ * creating this project, you must also update the build.properties file in the
+ * project.
+ */
+public class Robot extends IterativeRobot {
+	private static final String kDefaultAuto = "Default";
+	private static final String kCustomAuto = "My Auto";
+	private String m_autoSelected;
+	private SendableChooser<String> m_chooser = new SendableChooser<>();
+	TalonSRX t0 = new TalonSRX(0);
+	TalonSRX t1 = new TalonSRX(1);
+	TalonSRX t2 = new TalonSRX(2);
+	TalonSRX t3 = new TalonSRX(3);
+
+	Joystick left = new Joystick(2);
+	Joystick right = new Joystick(0);
+	Joystick controller = new Joystick(1);
+
+	JoystickButton b0 = new JoystickButton (left, 1);
+	JoystickButton b1 = new JoystickButton (controller, 2);
+	JoystickButton b2 = new JoystickButton (controller, 3);
+	JoystickButton b3 = new JoystickButton (controller, 4);
+	JoystickButton climb = new JoystickButton (controller, 5);
+	JoystickButton slowSpeed = new JoystickButton (left, 1);
+
+	JoystickButton normSpeed = new JoystickButton (right, 2);
+	JoystickButton medSpeed = new JoystickButton (left, 2);
+	
+	int Distanceinticks = (t1.getSensorCollection().getQuadraturePosition());
+	int Distanceinrotations = (t1.getSensorCollection().getQuadraturePosition()/4096);
+
+	int Distanceinticks2 = (t3.getSensorCollection().getQuadraturePosition());
+	int Distanceinrotationst3 = (t3.getSensorCollection().getQuadraturePosition()/4096);
+	double Distanceininches = (t1.getSensorCollection().getQuadraturePosition());
+	double Distanceininchest3 = (t3.getSensorCollection().getQuadraturePosition()*18.85/-4096);
+	int leftmotorV = t1.getSensorCollection().getPulseWidthVelocity();
+	int rightmotorV = t3.getSensorCollection().getPulseWidthVelocity();
+	
+	ADXRS450_Gyro gyro = new ADXRS450_Gyro();
+	
+	double angle = gyro.getAngle();
+
+
+
+	/**
+	 * This function is run when the robot is first started up and should be
+	 * used for any initialization code.
+	 */
+	@Override
+	public void robotInit() {
+		m_chooser.addDefault("Default Auto", kDefaultAuto);
+		m_chooser.addObject("My Auto", kCustomAuto);
+		SmartDashboard.putData("Auto choices", m_chooser);
+
+
+		t1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
+		t3.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
+		t1.setSelectedSensorPosition(0, 0, 0);
+		t3.setSelectedSensorPosition(0, 0, 0);
+		
+
+
+
+		//put other encoder here
+
+		//t1.setSensorPhase(true);
+		//put others here
+
+
+		//t1.setSelectedSensorPosition(t1.getSensorCollection().getPulseWidthPosition() & 0xFFF, 0, 10);
+		//t1.setSelectedSensorPosition(0, 0, 10);
+		//t3.setSelectedSensorPosition(0, 0, 10);
+		//t1.setSensorPhase(false);
+		//t1.setInverted(false);
+		//t1.setInverted(true);
+
+		//t1.configPeakOutputForward(.4, 10);
+		//	t2.configPeakOutputForward(.4, 10);
+		//	t3.configPeakOutputForward(.4, 10);
+		//	t0.configPeakOutputForward(.4, 10);
+
+		//	t1.configPeakOutputReverse(-.4, 10);
+		//	t2.configPeakOutputReverse(-.4, 10);
+		//	t3.configPeakOutputReverse(-.4, 10);
+		//	t0.configPeakOutputReverse(-.4, 10);
+
+
+	}
+
+
+	/**
+	 * This autonomous (along with the chooser code above) shows how to select
+	 * between different autonomous modes using the dashboard. The sendable
+	 * chooser code works with the Java SmartDashboard. If you prefer the
+	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
+	 * getString line to get the auto name from the text box below the Gyro
+	 *
+	 * <p>You can add additional auto modes by adding additional comparisons to
+	 * the switch structure below with additional strings. If using the
+	 * SendableChooser make sure to add them to the chooser code above as well.
+	 */
+	
+	/*
+	public class ADXRS453Gyro extends Subsystem {
+		
+		static final int DATA_SIZE = 4;
+		static final byte PARITY_BIT = (byte) 0x01;
+		static final byte STATUS_MASK = (byte)0x0C;
+		static final byte FIRST_BYTE_DATA_MASK = (byte) 0x03;
+		static final byte THIRD_BYTE_DATA_MASK = (byte) 0xFC;
+		static final byte READ_COMMAND = (byte) 0x20;
+		
+		static final byte ADXRS453_REG_RATE = (byte) 0x00;
+		static final byte ADXRS453_REG_TEM = (byte) 0x02;
+		static final byte ADXRS453_REG_LOCST = (byte) 0x04;
+		static final byte ADXRS453_REG_HICST = (byte) 0x06;
+		static final byte ADXRS453_REG_QUAD = (byte) 0x08;
+		static final byte ADXRS453_REG_FAULT = (byte) 0x0A;
+		static final byte ADXRS453_REG_PID = (byte) 0x0C;
+		static final byte ADXRS453_REG_SN_HIGH = (byte) 0x0E;
+		static final byte ADXRS453_REG_SN_LOW = (byte) 0x10;
+		
+		public volatile double currentRate;
+		private volatile double lastRate;
+		public volatile double deltaTime;
+		public volatile double currentTime;
+		private volatile double lastTime;
+		private volatile double angle;
+		public volatile double driftRate;
+		public volatile double accumulatedRate;
+		
+		private volatile int id;
+		private volatile double temp;
+		private volatile int status;
+		
+		private volatile boolean calibrate;
+		private volatile boolean stopCalibration;
+		private volatile boolean firstLoop;
+		public volatile double timeElapsed;
+		private volatile boolean calCompleted;
+		private static final double CALIBRATION_PERIOD = 10.0;
+		
+		private SPI spi;
+		
+		String binRate;
+		String binMessage;
+		
+		private java.util.Timer executor;
+		private long period;
+		
+		public ADXRS453Gyro() {
+			this.period = (long)3;
+			
+			spi = new SPI(Port.kOnboardCS0);
+			spi.setClockRate(4000000);
+			spi.setClockActiveHigh();
+			spi.setChipSelectActiveLow();
+			spi.setMSBFirst();
+			
+			currentRate = 0.0;
+			driftRate = 0.0;
+			
+			lastTime = 0;
+			currentTime = 0;
+			lastRate = 0;
+			deltaTime = 0;
+			accumulatedRate = 0;
+			
+			calibrate();
+			
+			temp = 0;
+			id = 0;
+			
+			reset();
+			
+		}
+		
+		public void startThread() {
+			this.executor = new java.util.Timer();
+			this.executor.schedule(new GyroUpdateTask(this), 0L, this.period);
+			
+		}
+		
+		public String getMessageBin() {
+			return binMessage;
+		}
+		
+		public String getRateBin() {
+			return binRate;
+		}
+		
+		public final void calibrate() {
+			calibrate = true;
+			firstLoop = true;
+			boolean stopCalibrating = false;
+			calCompleted = false;
+			
+		}
+		
+		public final boolean isCalibrating() {
+			return calibrate;
+		}
+		
+		public final boolean hasCompletedCalibration() {
+			return calCompleted;
+		}
+		
+		public final void stopCalibrating() {
+			  stopCalibration = true;
+		}
+		
+		public final void reset() {
+			angle = 0;
+		}
+		
+		public double getRate () {
+			return currentRate;
+		}
+		
+		public int getStatus() {
+			return status;
+		}
+		
+		public double getAngle() {
+			return angle;
+		}
+		
+		public double getPos() {
+			return getAngle();
+		}
+		
+		public double getDeltatime() {
+			return deltaTime;
+		}
+		
+		public int getID() {
+			return id;
+		}
+		
+		public double getTemp() {
+			return temp;
+		}
+		
+		public short getRegisterValue(byte registerAddress) {
+			byte[] command = new byte[DATA_SIZE];
+			byte[] data = new byte[DATA_SIZE];
+			command[0] = 0;
+			command[1] = 1;
+			command[2] = 2;
+			command[3] = 3;
+			data[0] = 0;
+			data[1] = 1;
+			data[2] = 2;
+			data[3] = 3;
+			
+			command[0] = (byte) ((0x01 << 7 | (registerAddress >> 7)));
+			command[1] = (byte) (registerAddress << 7);
+			
+			checkParity(command);
+			spi.write(command,DATA_SIZE);
+			spi.read(false, data, DATA_SIZE);
+			
+			int registerValue=0;
+			registerValue = (short) (((short) data[1]) <<11)  |
+							((short)data[2] << 3) |
+							((short) (data[3] >> 5));
+			
+			return (short) registerValue;
+			
+		}
+		
+		public String getBinaryFromByte(byte[] bytes) {
+			String temp = "";;
+			for(byte b : bytes)
+				temp += Integer.toBinaryString(b & 255 | 256).substring(1) + "";
+			
+			return temp;
+		}
+		
+		private void checkParity(byte[]data) {
+			if(BitSet.valueOf(data).cardinality() % 2 ==0)
+				data[3] |= PARITY_BIT;
+		}
+			
+		private double getSensorData() {
+			byte[] command = new byte[DATA_SIZE];
+			byte[] data = new byte[DATA_SIZE];
+			command[0] = READ_COMMAND;
+			command[1] = 0;
+			command[2] = 0;
+			command[3] = 0;
+			
+			checkParity(command);
+			spi.write(command,DATA_SIZE);
+			spi.read(false, data, DATA_SIZE);
+			
+			return sensorDataMask(data);
+			
+		}
+		
+		private double sensorDataMask(byte[] data) {
+			binMessage = getBinaryFromByte(data);
+			
+			status = (short)(data[0] & STATUS_MASK) >> 2;
+			
+			byte[] rateByte = new byte [2];
+			rateByte[0] = (byte) ((byte) ((data[1] >> 2) & 0x3F) | ((data[0]) & FIRST_BYTE_DATA_MASK) << 6);
+			rateByte[1] = (byte) ((byte) ((data[1] << 6) & 0xC0) | (data[2] & FIRST_BYTE_DATA_MASK) >> 2);
+			
+			short value = ByteBuffer.wrap(rateByte).order(ByteOrder.BIG_ENDIAN).getShort();;
+		
+			
+			byte[] newB = new byte[2];
+			newB[0] = (byte) ((value >> 8) & 0xff);
+			newB[1] = (byte)(value);
+			binRate = getBinaryFromByte(newB);
+			
+			return value / 80.0;
+		}
+		
+		private int GetID() {
+			short id = getRegisterValue(ADXRS453_REG_PID);
+			return id >> 8;
+			
+		}
+		
+		private double GetTemperature() {
+			short registerValue = 0;
+			short temperature = 0;
+			
+			registerValue = getRegisterValue(ADXRS453_REG_TEM);
+			registerValue = (short) ( (registerValue >>6) - 0x31F);
+			temperature = (short) (registerValue / 5);
+			
+			return temperature;
+			
+		}
+		
+		private void update() {
+			if(lastTime == 0) {
+				lastTime= Timer.getFPGATimestamp();
+			}
+			
+			currentRate = getSensorData();
+			currentTime = Timer.getFPGATimestamp();
+			deltaTime = currentTime - lastTime;
+			
+			angle += (currentRate - driftRate) * deltaTime;
+			
+			if(calibrate) {
+				if(firstLoop) {
+					driftRate = 0.0;
+					accumulatedRate = 0.0;
+					timeElapsed = 0.0;
+					firstLoop = false;
+			}
+			
+			timeElapsed += deltaTime;
+			accumulatedRate += currentRate * deltaTime;
+			driftRate = accumulatedRate / timeElapsed;
+			
+			
+			if (timeElapsed >= CALIBRATION_PERIOD || stopCalibration) {
+				calibrate = false;
+				reset();
+				
+				calCompleted= true;
+				System.out.println("Accumulated Offset: " + driftRate + "\tDelta Time: " + timeElapsed);
+			}
+		}
+		
+		lastRate = currentRate;
+		lastTime = currentTime;
+		
+		temp = GetTemperature();
+		id = GetID();
+		}
+		
+		private class GyroUpdateTask extends TimerTask {
+			private ADXRS453Gyro gyro;
+			
+			private GyroUpdateTask(ADXRS453Gyro gyro) {
+				if(gyro == null) {
+					throw new NullPointerException("Gyro pointer null");
+					
+				}
+				this.gyro = gyro;
+			}
+			
+		public void run() {
+			gyro.update();
+		}
+		
+		}
+		
+		public double getReducedAng() {
+			double now = this.getAngle();
+			return Math.abs(now % 360);
+		}
+		
+		@Override
+		protected void initDefaultCommand() {
+			
+		}
+					
+			
+			
+	*/
+				
+				
+			
+			
+	
+		
+
+			
+			 
+			
+			
+			
+			
+		
+			
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+			
+	
+	
+	
+	@Override
+	
+	public void autonomousInit() {
+		
+		m_autoSelected = m_chooser.getSelected();
+		/*autoSelected = SmartDashboard.getString("Auto Selector", 
+		defaultAuto);*/
+		System.out.println("Auto selected: " + m_autoSelected);
+		t1.getSensorCollection().setQuadraturePosition(0, 10);
+		t3.getSensorCollection().setQuadraturePosition(0, 10);
+		t1.getSensorCollection().setPulseWidthPosition(0, 10);
+		t3.getSensorCollection().setPulseWidthPosition(0, 10);
+		t1.set(ControlMode.Position, 0);
+		t3.set(ControlMode.Position, 0);
+		
+		
+		//auton2();
+		
+	}
+
+	/**
+	 * This function is called periodically during autonomous.
+	 */
+	@Override
+	public void autonomousPeriodic() {
+		switch (m_autoSelected) {
+		case kCustomAuto:
+			// Put custom auto code here
+			break;
+		case kDefaultAuto:
+		default:
+			System.out.println(t1.getSensorCollection().getPulseWidthPosition());
+			double Distanceininches = (t1.getSelectedSensorPosition(0)*18.85/-4096);
+			double Distanceininchest3 = (t3.getSelectedSensorPosition(0)*18.85/4096);
+			System.out.println(Distanceininches);
+			System.out.println(Distanceininchest3);
+			auton3();
+
+			//PUT ALL DRIVE CODE IN PERIODIC getSensorCollection().getPulseWidthPosition()
+			
+			
+			}
+			
+				}
+				
+	
+		
+		
+			
+			// If getPulseWidthPosition() = your whatever distance wanted, do another action by setting the drive to turn to an encoder position
+			
+			
+	
+
+	/**
+	 * This function is called periodically during operator control.
+	 */
+	@Override
+	public void teleopInit() {
+		
+		t1.setSelectedSensorPosition(0, 0, 0);
+		t3.setSelectedSensorPosition(0, 0, 0);
+		t1.set(ControlMode.PercentOutput, 0);
+		t3.set(ControlMode.PercentOutput, 0);
+	}
+	public void teleopPeriodic() {
+		gyro.reset();
+		tankDrive(left.getY(), right.getY());
+		//System.out.println(t1.getSensorCollection().getQuadraturePosition());
+		//System.out.println(Distanceininchest3);
+		System.out.println(angle);
+	}
+
+	/**
+	 * This function is called periodically during test mode.
+	 */
+	@Override
+	public void testPeriodic() {
+
+	}
+	public void tankDrive(double left, double right){
+		t1.set(ControlMode.PercentOutput, left);
+		t0.set(ControlMode.Follower, 1);
+		t3.set(ControlMode.PercentOutput, -right);
+		t2.set(ControlMode.Follower, 3);
+	}
+
+	/*void auton(){
+		//t1.getSelectedSensorPosition(5);
+		//t3.getSelectedSensorPosition(5);
+		//t1.setSelectedSensorPosition(FeedbackDevice, 5, 5);
+		//t3.setSelectedSensorPosition(FeedbackDevice, 5, 5);\
+		tankDrive(.40, .40);
+		Timer.delay(3);
+		tankDrive(0, 0);
+		Timer.delay(2);
+		tankDrive(.25, .25);
+		Timer.delay(2);
+		tankDrive(0, 0);
+		Timer.delay(10);
+	} 
+	*/
+	
+	void auton2() { 
+		if(t1.getSelectedSensorPosition(0) > -20000) {
+			tankDrive(.25, .25);
+		}else if (t1.getSelectedSensorPosition(0) <= -20000 /*Type.Input*/){
+			tankDrive(.32,0);
+			Timer.delay(2.1);
+			tankDrive(.25,.25);
+			Timer.delay(2.5);
+			tankDrive(0, 0);
+			Timer.delay(30);
+			
+		}
+		}
+		
+	void auton3() {
+		//(gyro.getAngle()<90){
+			
+		if (t1.getSelectedSensorPosition(0) > t3.getSelectedSensorPosition(0));
+		tankDrive(.25, .27);
+		if (t1.getSelectedSensorPosition(0) < t3.getSelectedSensorPosition(0));
+		tankDrive(.25, .27);
+	}
+		
+
+		
+		
+	
+			
+		
+
+}
+
+
